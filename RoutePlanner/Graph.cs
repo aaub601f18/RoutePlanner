@@ -29,13 +29,13 @@ namespace RoutePlanner
             {
                 var u = ExtractMinDist(ref q);
                 s.Add(u);
-                Console.WriteLine("On " + u.Id);
+                //Console.WriteLine("On " + u.Id);
                 foreach (var neighbour in u.edges)
                 {
                     int alt = u.Distance + Data.GetDistance(u, neighbour.DestV, rangeStart, rangeEnd);
                     if (alt < neighbour.DestV.Distance)
                     {
-                        Console.WriteLine("Relaxed " + neighbour.DestV.Id);
+                        //Console.WriteLine("Relaxed " + neighbour.DestV.Id);
                         neighbour.DestV.Distance = alt;
                         neighbour.DestV.Prev = u;
                     }

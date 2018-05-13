@@ -12,10 +12,10 @@ namespace RoutePlanner
             Data.Open();
             
             //Data.PopulateTimeRecords(DateTime.Today, edges);
-            string lat = "57.031746";
-            string lng = "10.306410";
+            string sourceLat = "57.031746";
+            string sourceLng = "10.306410";
 
-            var source = Data.GetVertex(lat, lng);
+            var source = Data.GetVertex(sourceLat, sourceLng);
             Console.WriteLine("Source Id: " + source.Id);
             
             DateTime startRange = new DateTime(2018, 05, 09, 16, 00, 00);
@@ -52,9 +52,7 @@ namespace RoutePlanner
                 var graph = Graph.BuildGraph(edges);
                 var optRoute = Graph.OptRoute(graph, source, startRange, endRange);    
             }
-            
-            //Console.ReadKey();
-            
+  
             Data.Close();
         }
     }

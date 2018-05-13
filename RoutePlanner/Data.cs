@@ -33,32 +33,9 @@ namespace RoutePlanner
         {
             conn.Close();
         }
-   /*     
-        public static Edge GetEdge(string id)
-        {
-            try
-            {
-                string sql = "SELECT * FROM edge WHERE id=" + id;
-                var dat = new Data();
-                MySqlCommand cmd = new MySqlCommand(sql, dat.conn);
-                MySqlDataReader res = cmd.ExecuteReader();
-            
-                res.Read();
+      
+        //public static Edge GetEdge(string id) {}
 
-                var v1 = GetVertex(res[1].ToString());
-                var v2 = GetVertex(res[2].ToString());
-                        
-                Edge e = new Edge(res[0].ToString(), res[1].ToString(), res[2].ToString(), res[3].ToString(), res[4].ToString(), res[5].ToString(), res[6].ToString(), res[7].ToString());
-                dat.Close();
-                return e;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                throw;
-            }
-        }
- */ 
         public static Vertex GetVertex(string id)
         {
             try
@@ -96,29 +73,6 @@ namespace RoutePlanner
                 res.Dispose();
                 res.Close();
                 return v;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                throw;
-            }
-
-        }
-        
-        public static List<Edge> GetEdgeByRelation(string id)
-        {
-            try
-            {
-                List<Edge> result = new List<Edge>();
-                string sql = String.Format("SELECT * FROM edge WHERE n1id={0} OR n2id={0}", id);
-                MySqlCommand cmd = new MySqlCommand(sql, conn);
-                MySqlDataReader res = cmd.ExecuteReader();
-
-                while (res.Read())
-                {
-                   // result.Add(new Edge(res[0].ToString(), res[1].ToString(), res[2].ToString(), res[3].ToString(), res[4].ToString(), res[5].ToString(), res[6].ToString(), res[7].ToString()));                    
-                }
-                return result;
             }
             catch (Exception e)
             {
@@ -187,63 +141,12 @@ namespace RoutePlanner
             res.Close();
             return edges;
         }
-/*
-        public static List<Edge> GetEdges(List<Vertex> vertices)
-        {
-            var dat = new Data();
-            List<Edge> edges = new List<Edge>();
-            string sql = "SELECT * FROM edge";
-            MySqlCommand cmd = new MySqlCommand(sql, dat.conn);
-            MySqlDataReader res = cmd.ExecuteReader();
 
-            res.Read();
-
-            foreach (var vertex in vertices)
-            {
-                var edge = GetEdgeByRelation(vertex.id);
-                edges.Add(edge);
-
-
-
-            }
-            
-         
-            
-            
-/* Langsom af h til
-            while (res.Read())
-            {
-                var v1id = res[1].ToString();
-                var v2id = res[2].ToString();
-
-                Vertex v1 = new Vertex();
-                Vertex v2 = new Vertex();
-                
-                foreach (var vertex in vertices)
-                {
-                    if (vertex.id == v1id)
-                    {
-                        v1 = vertex;
-                        Console.WriteLine("added " + vertex.id + " to v1 of " + res[0].ToString());
-                    }
-                    else if (vertex.id == v2id)
-                    {
-                        v2 = vertex;
-                        Console.WriteLine("added " + vertex.id + " to v2 of " + res[0].ToString());
-                    }
-                }
-                
-                edges.Add(new Edge(res[0].ToString(), v1, v2, res[3].ToString(), res[4].ToString(), res[5].ToString(), res[6].ToString(), res[7].ToString()));
-            }
-
-
-            dat.Close();
-            return edges;
-        } 
-           
+        //public static List<Edge> GetEdges(){}
+        
+        
         public static List<Vertex> GetVertices(double startLat, double destinationLat)
         {
-            var dat = new Data();
             List<Vertex> vertices = new List<Vertex>();
 
             string sql = "";
@@ -256,20 +159,20 @@ namespace RoutePlanner
                 sql = String.Format("SELECT * FROM vertex WHERE lat>={0} AND lat<={1}", startLat, destinationLat);
             }
 
-            MySqlCommand cmd = new MySqlCommand(sql, dat.conn);
+            MySqlCommand cmd = new MySqlCommand(sql, conn);
             MySqlDataReader res = cmd.ExecuteReader();
 
             while (res.Read())
             {
-                vertices.Add(new Vertex(res[0].ToString(),Convert.ToDouble(res[1]), Convert.ToDouble(res[2])));
+                vertices.Add(new Vertex(res[0].ToString(),res[1].ToString(), res[2].ToString()));
             }
 
-            dat.Close();
+            res.Dispose();
+            res.Close();
+
             return vertices;
         } 
-        */
-        
-        
+       
         public static int GetDistance(Vertex u, Vertex v, DateTime rangeStart, DateTime rangeEnd)
         {
             string sql = String.Format(@"
