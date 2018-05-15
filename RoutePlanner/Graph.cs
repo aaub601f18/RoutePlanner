@@ -19,7 +19,7 @@ namespace RoutePlanner
                 }
                 else
                 {
-                    v.Distance = Int32.MaxValue;
+                    v.Distance = 99999;
                 }
                 
                 q.Add(v);
@@ -29,13 +29,14 @@ namespace RoutePlanner
             {
                 var u = ExtractMinDist(ref q);
                 s.Add(u);
-                //Console.WriteLine("On " + u.Id);
-                foreach (var neighbour in u.edges)
+                Console.WriteLine("On " + u.Id);
+                foreach (var neighbour in u.neighbours)
                 {
+                    Console.WriteLine("\tNeighbour " + neighbour.DestV.Id);
                     int alt = u.Distance + Data.GetDistance(u, neighbour.DestV, rangeStart, rangeEnd);
                     if (alt < neighbour.DestV.Distance)
                     {
-                        //Console.WriteLine("Relaxed " + neighbour.DestV.Id);
+                        Console.WriteLine("Relaxed " + neighbour.DestV.Id);
                         neighbour.DestV.Distance = alt;
                         neighbour.DestV.Prev = u;
                     }
@@ -48,25 +49,32 @@ namespace RoutePlanner
         public static List<Vertex> BuildGraph(List<Edge> edges)
         {
             List<Vertex> graph = new List<Vertex>();
-
-            foreach (var edge in edges)
-            {
-                edge.StartV.edges.Add(edge);    
-            }
-            
-            foreach (var edge in edges)
+            int c = 0;
+            foreach (var edge in edges) // Init
             {
                 if (!graph.Contains(edge.StartV))
                 {
                     graph.Add(edge.StartV);
+                    c++;
                 }
 
                 if (!graph.Contains(edge.DestV))
                 {
                     graph.Add(edge.DestV);
+                    c++;
                 }
             }
 
+            foreach (var edge in edges)
+            {
+                foreach (var vertex in graph)
+                {
+                    if (edge.StartV.Id == vertex.Id)
+                    {
+                        vertex.neighbours.AddLast(edge);
+                    }
+                }
+            }
             return graph;
         }
 
@@ -88,6 +96,7 @@ namespace RoutePlanner
             vertices.Remove(minV); // pop
             return minV;
         }
+        
 
     }
 }

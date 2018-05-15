@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Dynamic;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Xml.Schema;
 using MySql.Data;
 using MySql.Data.MySqlClient;
@@ -84,13 +85,22 @@ namespace RoutePlanner
 
         public static void PopulateTimeRecords(DateTime date, List<Edge> edges)
         {
-            List<TimeRecord> records = TimeRecord.GenerateTimeRecords(date, edges, new Random(), 1000);
+            List<TimeRecord> records = TimeRecord.GenerateTimeRecords(date, edges, new Random(), 20);
+
+            string query = "INSERT INTO timerecords (date, timeTravelSeconds, edgeId) VALUES ";
+            StringBuilder str = new StringBuilder();
+            str.Append(query);
+            int count = records.Count;
             
             foreach (var record in records)
             {
+                Console.Clear();
+               Console.WriteLine(count + " left.");
                 string sql = String.Format("INSERT INTO timerecords (date, timeTravelSeconds, edgeId) VALUES ('{0}', {1}, {2})", record.Date.ToString("yyyy-MM-dd HH:mm:ss"), record.TimeTravelledInSeconds, record.Edge.Id);
-                MySqlCommand cmd = new MySqlCommand(sql, conn);
-                cmd.ExecuteNonQuery();
+               MySqlCommand cmd = new MySqlCommand(sql, conn);
+               cmd.ExecuteNonQuery();
+
+                count -= 1;
             }
         }
 
@@ -142,7 +152,22 @@ namespace RoutePlanner
             return edges;
         }
 
-        //public static List<Edge> GetEdges(){}
+        public static List<Edge> GetEdges()
+        {
+            List<Edge> edges = new List<Edge>();
+            string sql = "select edge.id, edge.n1id, edge.n2id, edge.oneway, edge.speed from edge inner join vertex as n1 on edge.n1id=n1.id inner join vertex as n2 on edge.n2id=n2.id where n1.lat<=57.039139 and n2.lat<=57.039139 and n1.lat>=57.029707 and n2.lat>=57.029707";
+            MySqlCommand cmd = new MySqlCommand(sql, conn);
+            MySqlDataReader res = cmd.ExecuteReader();
+
+            while (res.Read())
+            {
+                edges.Add(new Edge(res[0].ToString(), new Vertex(res[1].ToString()), new Vertex(res[2].ToString()), res[3].ToString(), res[4].ToString() ));
+            }
+                
+            res.Dispose();
+            res.Close();
+            return edges;
+        }
         
         
         public static List<Vertex> GetVertices(double startLat, double destinationLat)
@@ -176,7 +201,7 @@ namespace RoutePlanner
         public static int GetDistance(Vertex u, Vertex v, DateTime rangeStart, DateTime rangeEnd)
         {
             string sql = String.Format(@"
-                SELECT sum(t.timeTravelSeconds), count(t.id)
+                SELECT avg(t.timeTravelSeconds) as avg
                 FROM timerecords AS t
                     INNER JOIN edge AS e
                         ON e.id=t.edgeid
@@ -198,7 +223,7 @@ namespace RoutePlanner
             {
                 if (!(res[0] is DBNull) && !(res[1] is DBNull))
                 {
-                    avg = Convert.ToInt32(res[0]) / Convert.ToInt32(res[1]);
+                    avg = Convert.ToInt32(res[0]);
                 }
             }
             

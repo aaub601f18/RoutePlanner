@@ -12,11 +12,16 @@ namespace RoutePlanner
         public Boolean Null { get; set; }
         public int Distance { get; set; }
         public Vertex Prev { get; set; }
-        public List<Edge> edges;
+        public LinkedList<Edge> neighbours;
 
         public Vertex()
         {
-            edges = new List<Edge>();
+            neighbours = new LinkedList<Edge>();
+        }
+
+        public Vertex(string id) : this()
+        {
+            Id = id;
         }
         
         public Vertex(string id, string lat, string lng) : this()
