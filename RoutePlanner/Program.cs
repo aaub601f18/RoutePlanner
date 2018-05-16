@@ -25,7 +25,7 @@ namespace RoutePlanner
 
             #endregion
 
-            var sourceId = "56566355"; // Get the id from https://www.openstreetmap.org
+            var sourceId = "56697987"; // Get the id from https://www.openstreetmap.org
             var destinationId = "68469691"; // Get the id from https://www.openstreetmap.org
 
             var source = Data.GetVertex(sourceId);
@@ -34,8 +34,8 @@ namespace RoutePlanner
             Console.WriteLine("Source Id: " + source.Id);
             Console.WriteLine("Destination Id: " + destination.Id);
 
-            DateTime startRange = new DateTime(2018, 05, 16, 16, 00, 00);
-            DateTime endRange = new DateTime(2018, 05, 16, 16, 30, 00);
+            DateTime startRange = new DateTime(2018, 05, 16, 14, 00, 00);
+            DateTime endRange = new DateTime(2018, 05, 16, 17, 30, 00);
 
             var optRoute = Graph.GetRoute(source, destination, startRange, endRange);
 

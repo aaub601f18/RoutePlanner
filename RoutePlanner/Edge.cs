@@ -14,6 +14,23 @@ namespace RoutePlanner
         public string Type { get; set; }
         public int AvgTravelTime { get; set; }
         
+        public Edge(Vertex sv, Vertex dv, string oneway, string speed) 
+        {
+            StartV = sv;
+            DestV = dv;
+            Speed = speed;
+
+            if (oneway == "N")
+            {
+                Oneway = false;
+            }
+            else
+            {
+                Oneway = true;
+            }
+            
+        }
+        
         public Edge(string id, Vertex sv, Vertex dv, string oneway, string speed)
         {
             Id = id;

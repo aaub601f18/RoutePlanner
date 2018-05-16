@@ -154,21 +154,16 @@ namespace RoutePlanner
             return vertices;
         }
 
-        public static int GetDistance(Vertex u, Vertex v, DateTime rangeStart, DateTime rangeEnd)
+        public static int GetDistance(Edge edge, DateTime rangeStart, DateTime rangeEnd)
         {
             string sql = String.Format(@"
                 SELECT avg(t.timeTravelSeconds) as avg
                 FROM timerecords AS t
                     INNER JOIN edge AS e
                         ON e.id=t.edgeid
-                    INNER JOIN vertex AS s
-                        ON s.id=e.n1id
-                    INNER JOIN vertex AS d
-                        ON d.id=e.n2id
-                WHERE s.id={0}
-                    AND d.id={1} 
-                    AND t.date BETWEEN '{2}' 
-                        AND '{3}';", u.Id, v.Id, rangeStart.ToString("yyyy-MM-dd HH:mm:ss"),
+                WHERE e.id={0} 
+                    AND t.date BETWEEN '{1}' 
+                        AND '{2}';", edge.Id, rangeStart.ToString("yyyy-MM-dd HH:mm:ss"),
                 rangeEnd.ToString("yyyy-MM-dd HH:mm:ss")
             );
 

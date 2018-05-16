@@ -5,10 +5,10 @@ using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection.Metadata.Ecma335;
+using System.Security.Cryptography.X509Certificates;
 
 namespace RoutePlanner
 {
-
     public class Graph
     {
         public static List<Vertex> OptRoute(List<Vertex> graph, Vertex source, DateTime rangeStart, DateTime rangeEnd)
@@ -24,7 +24,7 @@ namespace RoutePlanner
                 }
                 else
                 {
-                    v.Distance = Int32.MaxValue;
+                    v.Distance = 10000;
                 }
 
                 q.Add(v);
@@ -32,19 +32,24 @@ namespace RoutePlanner
 
             while (q.Count > 0)
             {
-                q.Sort((x, y) => x.Distance.CompareTo(y.Distance)); // Extract MinDist (Min dist will come in front of q, thus at index 0. 
+                // Extract MinDist (Min dist will come in front of q, thus at index 0. 
+                q.Sort((x, y) => x.Distance.CompareTo(y.Distance));
                 var u = q[0];
                 q.RemoveAt(0);
                 foreach (var neighbour in u.neighbours)
                 {
-                    //int alt = q[0].Distance + Data.GetDistance(q[0], neighbour.DestV, rangeStart, rangeEnd); // Get distance from database. 
-                    int alt = u.Distance + neighbour.AvgTravelTime; //Data.GetDistance(u, neighbour.DestV, rangeStart, rangeEnd);
+                    int dist = neighbour.AvgTravelTime;
+                    int alt = u.Distance + dist;
+
+                    //int alt = u.Distance - Data.GetDistance(neighbour, rangeStart, rangeEnd); // Get distance from database. 
+                    Console.WriteLine(alt +"<" + neighbour.DestV.Distance);
                     if (alt < neighbour.DestV.Distance)
                     {
                         neighbour.DestV.Distance = alt;
                         neighbour.DestV.Prev = u;
                     }
                 }
+
                 s.Add(u);
             }
 
@@ -54,62 +59,60 @@ namespace RoutePlanner
         public static List<Vertex> BuildGraph(List<TimeRecord> records)
         {
             List<Vertex> graph = new List<Vertex>();
-            
-            
+
+            List<Edge> edges = new List<Edge>();
+
             foreach (var record in records)
             {
                 int currentEdgeTotalTravelTime = 0;
                 int currentEdgeNumberOfRecords = 0;
-                
-                foreach (var edge in records)
+
+                var edge = record.Edge;
+                if (!edges.Any(x => x.Id == record.Edge.Id))
                 {
-                    if (record.Edge.Id == edge.Edge.Id)
+                    foreach (var re in records)
                     {
-                        currentEdgeTotalTravelTime += edge.TimeTravelledInSeconds;
-                        currentEdgeNumberOfRecords++;
-                    }    
-                }
-                
-                record.Edge.AvgTravelTime = currentEdgeTotalTravelTime / currentEdgeNumberOfRecords;
-                
-                record.Edge.StartV.neighbours.AddLast(record.Edge);
-                if (record.Edge.Oneway)
-                {
-                    record.Edge.DestV.neighbours.AddLast(record.Edge);
-                }
-                
-                if (!graph.Any(x => x.Id == record.Edge.StartV.Id))
-                {
-                    graph.Add(record.Edge.StartV);
-                }
+                        if (re.Edge.Id == edge.Id)
+                        {
+                            currentEdgeTotalTravelTime += re.TimeTravelledInSeconds;
+                            currentEdgeNumberOfRecords++;
+                        }
+                    }
 
-                if (!graph.Any(x => x.Id == record.Edge.DestV.Id))
-                {
-                    graph.Add(record.Edge.DestV);
+                    int avg = currentEdgeTotalTravelTime / currentEdgeNumberOfRecords;
+                    edge.AvgTravelTime = avg;
+                    edges.Add(edge);
                 }
-                
-                
-
             }
-/*
-            
 
-            foreach (var record in records) // To get the average travel time into memory instead of having to extract it from DB for each iteration in OptRoute. This is more effective although it does not take data added after extract into account.
+            foreach (var record in records)
             {
-                int currentEdgeTotalTravelTime = 0;
-                int currentEdgeNumberOfRecords = 0;
+                var u = record.Edge.StartV;
+                var v = record.Edge.DestV;
 
-                foreach (var edge in records)
+                foreach (var edge in edges)
                 {
-                    if (record.Edge.Id == edge.Edge.Id)
+                    if (edge.StartV.Id == u.Id)
                     {
-                        currentEdgeTotalTravelTime += edge.TimeTravelledInSeconds;
-                        currentEdgeNumberOfRecords++;
+                        u.neighbours.AddLast(edge);
+                    }
+
+                    if (edge.DestV.Id == u.Id && edge.Oneway == false)
+                    {
+                        v.neighbours.AddLast(new Edge(v, u, "N", edge.Speed));
                     }
                 }
 
-                record.Edge.AvgTravelTime = currentEdgeTotalTravelTime / currentEdgeNumberOfRecords;
-            }*/
+                if (!graph.Any(x => x.Id == u.Id))
+                {
+                    graph.Add(u);
+                }
+
+                if (!graph.Any(x => x.Id == v.Id))
+                {
+                    graph.Add(v);
+                }
+            }
 
             return graph;
         }
