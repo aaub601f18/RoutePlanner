@@ -25,54 +25,48 @@ namespace RoutePlanner
 
             #endregion
 
+            var sourceId = "56566355"; // Get the id from https://www.openstreetmap.org
+            var destinationId = "68469691"; // Get the id from https://www.openstreetmap.org
 
-            string sourceLat = "57.031651";
-            string sourceLng = "9.969195";
+            var source = Data.GetVertex(sourceId);
+            var destination = Data.GetVertex(destinationId);
 
-            var source = Data.GetVertex("1032373169");
             Console.WriteLine("Source Id: " + source.Id);
+            Console.WriteLine("Destination Id: " + destination.Id);
 
-            DateTime startRange = new DateTime(2018, 05, 09, 16, 00, 00);
-            DateTime endRange = new DateTime(2018, 05, 09, 16, 15, 00);
+            DateTime startRange = new DateTime(2018, 05, 16, 16, 00, 00);
+            DateTime endRange = new DateTime(2018, 05, 16, 16, 30, 00);
 
-            var records = Data.GetLiveData(startRange, endRange, "57.029707", "", "57.039139", "");
+            var optRoute = Graph.GetRoute(source, destination, startRange, endRange);
 
-
-            if (Graph.ValidateInput(records, source.Id))
+            if (System.IO.File.Exists(@"output.txt"))
             {
-                var graph = Graph.BuildGraph(records);
-                var optRoute = Graph.OptRoute(graph, source, startRange, endRange);
+                System.IO.File.Delete(@"output.txt");
+            }
 
-                if (System.IO.File.Exists(@"output.txt"))
+            foreach (var el in optRoute)
+            {
+                List<string> strings = new List<string>();
+
+                if (el.Prev == null && el.Distance == 0)
                 {
-                    System.IO.File.Delete(@"output.txt");
-                }
-
-                foreach (var el in optRoute)
-                {
-                    List<string> strings = new List<string>();
-
                     strings.Add("Vertex: " + el.Id);
                     strings.Add("Distance: " + el.Distance);
-
-                    if (el.Prev != null)
-                    {
-                        strings.Add("Previous: " + el.Prev.Id);
-                    }
-                    else
-                    {
-                        strings.Add("Previous: null");
-                    }
-
+                    strings.Add("Previous: null");
                     strings.Add("--------------");
-
-                    System.IO.File.AppendAllLines(@"output.txt", strings);
                 }
+
+                if (el.Prev != null)
+                {
+                    strings.Add("Vertex: " + el.Id);
+                    strings.Add("Distance: " + el.Distance);
+                    strings.Add("Previous: " + el.Prev.Id);
+                    strings.Add("--------------");
+                }
+
+                System.IO.File.AppendAllLines(@"output.txt", strings);
             }
-            else
-            {
-                Console.WriteLine("Graph cannot be validated.");
-            }
+
 
             Data.Close();
         }
