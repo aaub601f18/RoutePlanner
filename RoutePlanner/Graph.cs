@@ -52,14 +52,14 @@ namespace RoutePlanner
         {
             List<Vertex> graph = new List<Vertex>();
 
-            foreach (var record in records) // Init
+            foreach (var record in records) // Init 
             {
-                if (!graph.Contains(record.Edge.StartV))
+                if (!graph.Any(x => x.Id == record.Edge.StartV.Id))
                 {
                     graph.Add(record.Edge.StartV);
                 }
 
-                if (!graph.Contains(record.Edge.DestV))
+                if (!graph.Any(x => x.Id == record.Edge.DestV.Id))
                 {
                     graph.Add(record.Edge.DestV);
                 }

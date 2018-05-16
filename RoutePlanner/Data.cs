@@ -233,7 +233,7 @@ namespace RoutePlanner
             return avg;
         }
 
-        public static int GetDistanceMemory(Vertex u, Vertex v, List<TimeRecord> timeRecords)
+        public static int GetDistanceMemory(Vertex u, Vertex v, List<TimeRecord> timeRecords) //TODO: Clean
         {
             int distance = 0;
             int count = 0;
