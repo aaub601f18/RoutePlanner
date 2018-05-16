@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using System.Linq.Expressions;
 
 namespace RoutePlanner
 {
@@ -10,7 +12,7 @@ namespace RoutePlanner
         {
             List<Vertex> q = new List<Vertex>();
             List<Vertex> s = new List<Vertex>();
-            
+
             foreach (var v in graph) // Init
             {
                 if (source.Id == v.Id)
@@ -21,82 +23,99 @@ namespace RoutePlanner
                 {
                     v.Distance = 99999;
                 }
-                
+
                 q.Add(v);
             }
 
-            while (q.Count != 0)
+            while (q.Count > 0)
             {
-                var u = ExtractMinDist(ref q);
-                s.Add(u);
-                Console.WriteLine("On " + u.Id);
-                foreach (var neighbour in u.neighbours)
+                q.Sort((x, y) => x.Distance.CompareTo(y.Distance)); // Extract MinDist (Min dist will come in front of q, thus at index 0. 
+                s.Add(q[0]);
+                
+                foreach (var neighbour in q[0].neighbours)
                 {
-                    Console.WriteLine("\tNeighbour " + neighbour.DestV.Id);
-                    int alt = u.Distance + Data.GetDistance(u, neighbour.DestV, rangeStart, rangeEnd);
+                    //int alt = q[0].Distance + Data.GetDistance(q[0], neighbour.DestV, rangeStart, rangeEnd);
+                    int alt = q[0].Distance + neighbour.AvgTravelTime; //Data.GetDistance(u, neighbour.DestV, rangeStart, rangeEnd);
                     if (alt < neighbour.DestV.Distance)
                     {
-                        Console.WriteLine("Relaxed " + neighbour.DestV.Id);
                         neighbour.DestV.Distance = alt;
-                        neighbour.DestV.Prev = u;
+                        neighbour.DestV.Prev = q[0];
                     }
                 }
+                q.RemoveAt(0);
             }
 
             return s;
         }
 
-        public static List<Vertex> BuildGraph(List<Edge> edges)
+        public static List<Vertex> BuildGraph(List<TimeRecord> records)
         {
             List<Vertex> graph = new List<Vertex>();
-            int c = 0;
-            foreach (var edge in edges) // Init
+
+            foreach (var record in records) // Init
             {
-                if (!graph.Contains(edge.StartV))
+                if (!graph.Contains(record.Edge.StartV))
                 {
-                    graph.Add(edge.StartV);
-                    c++;
+                    graph.Add(record.Edge.StartV);
                 }
 
-                if (!graph.Contains(edge.DestV))
+                if (!graph.Contains(record.Edge.DestV))
                 {
-                    graph.Add(edge.DestV);
-                    c++;
+                    graph.Add(record.Edge.DestV);
                 }
             }
 
-            foreach (var edge in edges)
+            foreach (var record in records)
+            {
+                int currentEdgeTotalTravelTime = 0;
+                int currentEdgeNumberOfRecords = 0;
+
+                foreach (var edge in records)
+                {
+                    if (record.Edge.Id == edge.Edge.Id)
+                    {
+                        currentEdgeTotalTravelTime += edge.TimeTravelledInSeconds;
+                        currentEdgeNumberOfRecords++;
+                    }
+                }
+
+                record.Edge.AvgTravelTime = currentEdgeTotalTravelTime / currentEdgeNumberOfRecords;
+            }
+
+            foreach (var record in records)
             {
                 foreach (var vertex in graph)
                 {
-                    if (edge.StartV.Id == vertex.Id)
+                    if (record.Edge.StartV.Id == vertex.Id)
                     {
-                        vertex.neighbours.AddLast(edge);
+                        vertex.neighbours.AddLast(record.Edge);
                     }
                 }
             }
+
             return graph;
         }
 
         public static Vertex ExtractMinDist(ref List<Vertex> vertices)
         {
-            int min = Int32.MaxValue;
-            Vertex minV = null; // ¯\_(ツ)_/¯ 
-            int numberOfVertices = vertices.Count;
-            
-            foreach (var vertex in vertices)
+            vertices.Sort((x, y) => x.Distance.CompareTo(y.Distance));
+            var v = vertices[0];
+            Console.WriteLine("popped " + v.Id);
+            vertices.RemoveAt(0);
+            return v;
+        }
+
+        public static bool ValidateInput(List<TimeRecord> records, string SourceId)
+        {
+            foreach (var record in records)
             {
-                if (vertex.Distance <= min)
+                if (record.Edge.StartV.Id == SourceId)
                 {
-                    min = vertex.Distance;
-                    minV = vertex;
+                    return true;
                 }
             }
-            
-            vertices.Remove(minV); // pop
-            return minV;
-        }
-        
 
+            return false;
+        }
     }
 }

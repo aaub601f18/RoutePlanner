@@ -12,6 +12,7 @@ namespace RoutePlanner
         public string Distance { get; set; }
         public string Name { get; set; }
         public string Type { get; set; }
+        public int AvgTravelTime { get; set; }
         
         public Edge(string id, Vertex sv, Vertex dv, string oneway, string speed)
         {

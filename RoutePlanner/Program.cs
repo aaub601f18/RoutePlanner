@@ -11,16 +11,21 @@ namespace RoutePlanner
         {
             Data.Open();
 
+
+            #region Generate Timerecords
+
 /*
             var edges = Data.GetEdges();
             DateTime d1 = DateTime.Now;
             Console.WriteLine("press");
             Console.ReadKey();
             Data.PopulateTimeRecords(d1, edges);
-  */
+            Data.PopulateTimeRecords(DateTime.Today, edges);
+ */
+
+            #endregion
 
 
-            //Data.PopulateTimeRecords(DateTime.Today, edges);
             string sourceLat = "57.031651";
             string sourceLng = "9.969195";
 
@@ -30,57 +35,43 @@ namespace RoutePlanner
             DateTime startRange = new DateTime(2018, 05, 09, 16, 00, 00);
             DateTime endRange = new DateTime(2018, 05, 09, 16, 15, 00);
 
-            var edges = Data.GetLiveData(startRange, endRange, "57.029707", "", "57.039139", "");
-            bool checker = false;
+            var records = Data.GetLiveData(startRange, endRange, "57.029707", "", "57.039139", "");
 
-            Console.WriteLine("Press key to check whether graph is possible..");
-            Console.ReadKey();
 
-            foreach (var edge in edges)
+            if (Graph.ValidateInput(records, source.Id))
             {
-                if (edge.StartV.Id == source.Id)
-                {
-                    checker = true;
-                }
-            }
-
-            if (checker == false)
-            {
-                Console.WriteLine("Graph is not possible.");
-            }
-            else
-            {
-                Console.WriteLine("Graph is possible.");
-            }
-
-            Console.WriteLine("Press key to run graph and opt..");
-            Console.ReadKey();
-
-
-            if (checker)
-            {
-                var graph = Graph.BuildGraph(edges);
-
-                foreach (var vertex in graph)
-                {
-                    Console.WriteLine(vertex.Id + "    " + vertex.neighbours.Count);
-                }
-
+                var graph = Graph.BuildGraph(records);
                 var optRoute = Graph.OptRoute(graph, source, startRange, endRange);
+
+                if (System.IO.File.Exists(@"output.txt"))
+                {
+                    System.IO.File.Delete(@"output.txt");
+                }
 
                 foreach (var el in optRoute)
                 {
+                    List<string> strings = new List<string>();
+
+                    strings.Add("Vertex: " + el.Id);
+                    strings.Add("Distance: " + el.Distance);
+
                     if (el.Prev != null)
                     {
-                        Console.WriteLine("Vertex: " + el.Id + "\nDistance: " + el.Distance + "\nPrevious: " +
-                                          el.Prev.Id + "\n");
+                        strings.Add("Previous: " + el.Prev.Id);
                     }
                     else
                     {
-                        Console.WriteLine("Vertex: " + el.Id + "\nDistance: " + el.Distance + "\nPrevious: " + "null" +
-                                          "\n");
+                        strings.Add("Previous: null");
                     }
+
+                    strings.Add("--------------");
+
+                    System.IO.File.AppendAllLines(@"output.txt", strings);
                 }
+            }
+            else
+            {
+                Console.WriteLine("Graph cannot be validated.");
             }
 
             Data.Close();

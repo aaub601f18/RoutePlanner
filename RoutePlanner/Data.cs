@@ -103,7 +103,7 @@ namespace RoutePlanner
                 count -= 1;
             }
         }
-
+/*
         public static List<Edge> GetLiveData(DateTime rangeStart, DateTime rangeEnd, string startLat, string startLng,
             string destinationLat, string destinationLng)
         {
@@ -131,7 +131,7 @@ namespace RoutePlanner
                             (s.lat<={2}
                             AND d.lat>={3}), 
                             (s.lat>={2}
-                            AND d.lat<={3}));",
+                            AND d.lat<={3}))",
                 rangeStart.ToString("yyyy-MM-dd HH:mm:ss"), rangeEnd.ToString("yyyy-MM-dd HH:mm:ss"), startLat, destinationLat
             );
 
@@ -151,7 +151,7 @@ namespace RoutePlanner
             res.Close();
             return edges;
         }
-
+*/
         public static List<Edge> GetEdges()
         {
             List<Edge> edges = new List<Edge>();
@@ -212,7 +212,7 @@ namespace RoutePlanner
                 WHERE s.id={0}
                     AND d.id={1} 
                     AND t.date BETWEEN '{2}' 
-                        AND '{3}';", u.Id, u.Id, rangeStart.ToString("yyyy-MM-dd HH:mm:ss"), rangeEnd.ToString("yyyy-MM-dd HH:mm:ss")
+                        AND '{3}';", u.Id, v.Id, rangeStart.ToString("yyyy-MM-dd HH:mm:ss"), rangeEnd.ToString("yyyy-MM-dd HH:mm:ss")
             );
             
             MySqlCommand cmd = new MySqlCommand(sql, conn);
@@ -221,7 +221,7 @@ namespace RoutePlanner
             int avg = int.MaxValue;
             while (res.Read())
             {
-                if (!(res[0] is DBNull) && !(res[1] is DBNull))
+                if (!(res[0] is DBNull))
                 {
                     avg = Convert.ToInt32(res[0]);
                 }
@@ -231,6 +231,70 @@ namespace RoutePlanner
             res.Close();
             
             return avg;
+        }
+
+        public static int GetDistanceMemory(Vertex u, Vertex v, List<TimeRecord> timeRecords)
+        {
+            int distance = 0;
+            int count = 0;
+            foreach (var record in timeRecords)
+            {
+                if (record.Edge.StartV == u && record.Edge.DestV == v)
+                {
+                    distance += record.TimeTravelledInSeconds;
+                    count++;
+                }
+            }
+
+            return distance / count;
+        }
+
+        public static List<TimeRecord> GetLiveData(DateTime rangeStart, DateTime rangeEnd, string startLat, string startLng,
+            string destinationLat, string destinationLng)
+        {
+            List<TimeRecord> records = new List<TimeRecord>();
+            string sql = String.Format(@"
+                SELECT e.id as edgeId, 
+                    s.id as startId, 
+                    s.lat as startLat, 
+                    s.lng as startLng, 
+                    d.id as endId, 
+                    d.lat as endLat, 
+                    d.lng as endLng, 
+                    e.speed, e.oneway, t.timeTravelSeconds as traveltime, t.date as date
+                FROM timerecords AS t
+                    INNER JOIN edge AS e
+                        ON e.id=t.edgeId
+                    INNER JOIN vertex AS s
+                        ON s.id=e.n1id
+                    INNER JOIN vertex AS d
+                        ON d.id=e.n2id
+                    WHERE 
+                        t.date BETWEEN '{0}'
+                            AND '{1}'
+                        AND IF({2}>={3}, 
+                            (s.lat<={2}
+                            AND d.lat>={3}), 
+                            (s.lat>={2}
+                            AND d.lat<={3}))",
+                rangeStart.ToString("yyyy-MM-dd HH:mm:ss"), rangeEnd.ToString("yyyy-MM-dd HH:mm:ss"), startLat, destinationLat
+            );
+
+            MySqlCommand cmd = new MySqlCommand(sql, conn);
+            MySqlDataReader res = cmd.ExecuteReader();
+            
+            while (res.Read())
+            {
+                Vertex startV = new Vertex(res[1].ToString(), res[2].ToString(), res[3].ToString());
+                Vertex destV = new Vertex(res[4].ToString(), res[5].ToString(), res[6].ToString());
+                Edge edge = new Edge(res[0].ToString(), startV, destV, res[7].ToString(), res[8].ToString());
+                TimeRecord record = new TimeRecord(DateTime.Parse(res[10].ToString()), Convert.ToInt32(res[9].ToString()), edge);
+                records.Add(record);
+            }
+     
+            res.Dispose();
+            res.Close();
+            return records;
         }
     }
 }
