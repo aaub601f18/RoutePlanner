@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Dynamic;
+using System.Linq;
 using System.Numerics;
+using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Xml.Schema;
@@ -154,41 +156,12 @@ namespace RoutePlanner
             return vertices;
         }
 
-        public static int GetDistance(Edge edge, DateTime rangeStart, DateTime rangeEnd)
+        public static List<Vertex> BuildGraph(Vertex start, Vertex destination)
         {
-            string sql = String.Format(@"
-                SELECT avg(t.timeTravelSeconds) as avg
-                FROM timerecords AS t
-                    INNER JOIN edge AS e
-                        ON e.id=t.edgeid
-                WHERE e.id={0} 
-                    AND t.date BETWEEN '{1}' 
-                        AND '{2}';", edge.Id, rangeStart.ToString("yyyy-MM-dd HH:mm:ss"),
-                rangeEnd.ToString("yyyy-MM-dd HH:mm:ss")
-            );
-
-            MySqlCommand cmd = new MySqlCommand(sql, conn);
-            MySqlDataReader res = cmd.ExecuteReader();
-
-            int avg = int.MaxValue;
-            while (res.Read())
-            {
-                if (!(res[0] is DBNull))
-                {
-                    avg = Convert.ToInt32(res[0]);
-                }
-            }
-
-            res.Dispose();
-            res.Close();
-
-            return avg;
-        }
-
-        public static List<TimeRecord> GetLiveData(DateTime rangeStart, DateTime rangeEnd, Vertex start,
-            Vertex destination)
-        {
-            List<TimeRecord> records = new List<TimeRecord>();
+            Test.NumberOfEdges = 0;
+            Test.BuildGraphCount["1"]++;
+            List<Vertex> graph = new List<Vertex>();
+            Test.BuildGraphCount["2"]++;
             string sql = String.Format(@"
                 SELECT e.id as edgeId, 
                     s.id as startId, 
@@ -197,40 +170,94 @@ namespace RoutePlanner
                     d.id as endId, 
                     d.lat as endLat, 
                     d.lng as endLng, 
-                    e.speed, e.oneway, t.timeTravelSeconds as traveltime, t.date as date
-                FROM timerecords AS t
-                    INNER JOIN edge AS e
-                        ON e.id=t.edgeId
+                    e.speed, e.oneway
+                FROM edge AS e
                     INNER JOIN vertex AS s
                         ON s.id=e.n1id
                     INNER JOIN vertex AS d
                         ON d.id=e.n2id
-                    WHERE 
-                        t.date BETWEEN '{0}'
-                            AND '{1}'
-                        AND s.lat<={2}
-                        AND s.lng>={3}
-                        AND d.lat>={4} 
-                        AND d.lng<={5}",
-                rangeStart.ToString("yyyy-MM-dd HH:mm:ss"), rangeEnd.ToString("yyyy-MM-dd HH:mm:ss"), start.Lat,
+                    WHERE s.lat<={0}
+                        AND s.lng>={1}
+                        AND d.lat>={2} 
+                        AND d.lng<={3}",
+                start.Lat,
                 start.Lng, destination.Lat, destination.Lng);
-
+            
             MySqlCommand cmd = new MySqlCommand(sql, conn);
             MySqlDataReader res = cmd.ExecuteReader();
-
+            
             while (res.Read())
             {
-                Vertex startV = new Vertex(res[1].ToString(), res[2].ToString(), res[3].ToString());
-                Vertex destV = new Vertex(res[4].ToString(), res[5].ToString(), res[6].ToString());
-                Edge edge = new Edge(res[0].ToString(), startV, destV, res[7].ToString(), res[8].ToString());
-                TimeRecord record = new TimeRecord(DateTime.Parse(res[10].ToString()),
-                    Convert.ToInt32(res[9].ToString()), edge);
-                records.Add(record);
+                Test.BuildGraphCount["3"]++;
+                Test.NumberOfEdges++;
+                Test.BuildGraphCount["4"]++;
+                var u = new Vertex(res[1].ToString(), res[2].ToString(), res[3].ToString());
+                Test.BuildGraphCount["5"]++;
+                var v = new Vertex(res[4].ToString(), res[5].ToString(), res[6].ToString());
+                Test.BuildGraphCount["6"]++;
+                var e = new Edge(res[0].ToString(), u, v, res[7].ToString(), res[8].ToString());
+
+                Test.BuildGraphCount["9"]++;
+                u.neighbours.AddLast(e);
+                if (!e.Oneway)
+                {
+                    Test.BuildGraphCount["10"]++;
+                    v.neighbours.AddLast(e);
+                }
+                                
+                if (!graph.Any(x=>x.Id==u.Id))
+                {
+                    Test.BuildGraphCount["7"]++;
+                    graph.Add(u);
+                }
+
+                if (!graph.Any(x=>x.Id==v.Id))
+                {
+                    Test.BuildGraphCount["8"]++;
+                    graph.Add(v);
+                }
             }
 
             res.Dispose();
             res.Close();
-            return records;
+            Test.BuildGraphCount["11"]++;
+            Test.NumberOfVertices = graph.Count;
+            return graph;
+        }
+
+        public static void UpdateDistance(ref List<Vertex> graph, DateTime startTime, DateTime endTime)
+        {
+            Test.NumberOfTimeRecords = 0;        
+            string sql = String.Format(@"
+                SELECT edgeId AS eid, avg(t.timeTravelSeconds) AS avg
+		        FROM timerecords AS t
+			        INNER JOIN edge AS e ON e.id=t.edgeid
+		        WHERE t.date BETWEEN '{0}' AND '{1}'
+		        GROUP BY e.id", startTime.ToString("yyyy-MM-dd HH:mm:ss"), endTime.ToString("yyyy-MM-dd HH:mm:ss"));
+            MySqlCommand cmd = new MySqlCommand(sql, conn);
+            MySqlDataReader res = cmd.ExecuteReader();
+            Test.UpdateDistanceCount["1"]++;
+            while (res.Read())
+            {
+                Test.NumberOfTimeRecords++;
+                Test.UpdateDistanceCount["2"]++;
+
+                foreach (var vertex in graph)
+                {
+                    Test.UpdateDistanceCount["3"]++;
+                    foreach (var e in vertex.neighbours)
+                    {
+                        Test.UpdateDistanceCount["4"]++;
+                        if (e.Id == res[0].ToString())
+                        {
+                            Test.UpdateDistanceCount["5"]++;
+                            e.AvgTravelTime = Convert.ToInt32(res[1]);
+                        }
+                    }
+                }
+            }
+
+            Test.UpdateDistanceCount["6"]++;
         }
 
         public static List<TimeRecord> GetLiveData(DateTime rangeStart, DateTime rangeEnd, string startLat,

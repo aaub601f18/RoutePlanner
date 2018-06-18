@@ -10,7 +10,7 @@ namespace RoutePlanner
         static void Main(string[] args)
         {
             Data.Open();
-
+            Test.Prep();
 
             #region Generate Timerecords
 
@@ -26,18 +26,18 @@ namespace RoutePlanner
             #endregion
 
             var sourceId = "56697987"; // Get the id from https://www.openstreetmap.org
-            var destinationId = "68469691"; // Get the id from https://www.openstreetmap.org
+            var destinationId = "1605546592"; // Get the id from https://www.openstreetmap.org
 
             var source = Data.GetVertex(sourceId);
             var destination = Data.GetVertex(destinationId);
-
+ 
             Console.WriteLine("Source Id: " + source.Id);
             Console.WriteLine("Destination Id: " + destination.Id);
 
-            DateTime startRange = new DateTime(2018, 05, 16, 14, 00, 00);
-            DateTime endRange = new DateTime(2018, 05, 16, 17, 30, 00);
+            DateTime startTime = new DateTime(2018, 05, 16, 15, 00, 00);
+            DateTime endTime = new DateTime(2018, 05, 16, 15, 30, 00);
 
-            var optRoute = Graph.GetRoute(source, destination, startRange, endRange);
+            var optRoute = Graph.GetRoute(source, destination, startTime, endTime);
 
             if (System.IO.File.Exists(@"output.txt"))
             {
@@ -68,6 +68,10 @@ namespace RoutePlanner
             }
 
 
+            Console.WriteLine("\n\n- Test Results -");
+            Test.PrintResult();
+            Test.SaveResult();
+            
             Data.Close();
         }
     }
